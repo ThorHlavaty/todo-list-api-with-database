@@ -4,6 +4,12 @@ body {
   font-family: sans-serif;
 }
 
+.checked {
+  text-decoration: line-through;
+  text-decoration-style: wavy;
+  text-decoration-color: red;
+}
+
 .container {
   max-width: 95%;
   margin: 30px auto;

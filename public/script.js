@@ -10,15 +10,25 @@ function getTodoHtml(todoData) {
   const html = `
       <li class="todo-item js-todo-item" data-id="${todoData.id}">
         <div class="todo-form">
-          <input type="text" class="todo-form-input js-todo-item-${todoData.id}" value="${todoData.name}" />
+          <input type="text" class="${todoData.complete ? 'checked' : ''} todo-form-input js-todo-item-${todoData.id}" value="${todoData.name}" />
           <button class="todo-button save js-save-button" data-id="${todoData.id}" type="submit">Save</button>
         </div>
         <button class="todo-button delete js-delete-button" data-id="${todoData.id}" type="button">X</button>
+        <input ${todoData.complete ? 'checked' : ''} type="checkbox" class="check-button" data-id="${todoData.id}">
       </li>
     `;
   // return the built string back to the invoking function
   return html;
 }
+
+function completedCheck() {
+  Array.from(document.getElementsByClassName("check-button")).forEach(element => {
+    (element.checked ? todoData.complete = true : todoData.complete = false)
+    console.log("I did something?")
+    console.log(todoData.complete)
+  })
+}
+
 
 /**
  * Get the Todo Data from the API and export. Displays an alert if there is an error.
@@ -127,6 +137,19 @@ function updateTodo(id) {
     });
 }
 
+function checkTodo(id) {
+  const todoField = document.querySelector(`.js-todo-item-${id}`);
+  axios
+    .patch(`/api/todos/${id}/check`)
+    .then((response) => {
+      renderTodos();
+    })
+    .catch((error) => {
+      const errorText = error.response.data.error || error;
+      alert('could not update todo:' + errorText);
+    });
+}
+
 /* Start Execution */
 
 // find the `add todo` form on the page
@@ -161,6 +184,13 @@ document.addEventListener('click', (e) => {
     const id = e.target.dataset.id;
     // pass the id to the `updateTodo()` function
     updateTodo(id);
+  }
+
+  if (e.target.classList.contains('check-button')) {
+    // find the id of the todo that is to be deleted using the 'data-id' attribute of the button
+    const id = e.target.dataset.id;
+    // pass the id to the `deleteTodo()` function
+    checkTodo(id);
   }
 });
 

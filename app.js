@@ -18,9 +18,8 @@ app.use(
     secret: 'secret', // used to sign the cookie
     resave: false, // update session even w/ no changes
     saveUninitialized: true, // always create a session
-    cookie: {
-      store: store
-    },
+    store: store
+
   }));
 
 store.sync();
@@ -143,8 +142,12 @@ app.get('/logout', (req, res) => {
   res.redirect('/login')
 })
 // GET /api/todos
-app.get('/api/todos', (req, res) => {
-  db.Todo.findAll()
+app.get('/api/todos', checkAuth, (req, res) => {
+  db.Todo.findAll({
+      where: {
+        UserId: req.session.user.id
+      }
+    })
     .then((todos) => {
       res.json(todos);
     })
@@ -156,11 +159,13 @@ app.get('/api/todos', (req, res) => {
     })
 });
 
+app.use('/api*', checkAuth)
+
 // GET /api/todos/:id
 app.get('/api/todos/:id', (req, res) => {
   const {
     id
-  } = req.params;
+  } = req.session.user.id;
   db.Todo.findByPk(id)
     .then((todo) => {
       if (!todo) {
@@ -190,7 +195,8 @@ app.post('/api/todos', (req, res) => {
   }
 
   db.Todo.create({
-      name: req.body.name
+      name: req.body.name,
+      UserId: req.session.user.id
     })
     .then((newTodo) => {
       res.json(newTodo);
@@ -215,7 +221,12 @@ app.put('/api/todos/:id', (req, res) => {
   const {
     id
   } = req.params;
-  db.Todo.findByPk(id)
+  db.Todo.findOne({
+      where: {
+        id: id,
+        UserId: req.session.user.id
+      }
+    })
     .then((todo) => {
       if (!todo) {
         res.status(404).json({
@@ -242,7 +253,8 @@ app.delete('/api/todos/:id', (req, res) => {
   } = req.params;
   db.Todo.destroy({
       where: {
-        id: id
+        UserId: req.session.user.id,
+        id: req.params.id
       }
     })
     .then((deleted) => {
@@ -261,6 +273,28 @@ app.delete('/api/todos/:id', (req, res) => {
       });
     })
 });
+
+app.patch('/api/todos/:id/check', (req, res) => {
+  db.Todo.findOne({
+      where: {
+        UserId: req.session.user.id,
+        id: req.params.id
+      }
+    })
+    .then(todo => {
+      if (!todo) {
+        res.status(404).json({
+          error: `Could not find Todo with id: ${id}`
+        })
+        return
+      }
+      todo.complete = !todo.complete;
+      todo.save()
+      res.json(todo)
+
+
+    })
+})
 
 app.listen(3000, function () {
   console.log('Todo List API is now listening on port 3000...');
